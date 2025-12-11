@@ -1,94 +1,89 @@
 <script lang="ts">
-  import { currentStep, nextStep } from "$lib/stores/game";
-  import { items, tasks, getTasksForItem } from "$lib/stores/tasks";
-  import { onMount } from "svelte";
+  import { currentStep, nextStep, nightState, startNight } from "$lib/stores/game";
+  import { getTasksForItem } from "$lib/stores/tasks";
 
   import type { Item, Task } from "$lib/stores/tasks";
 
-  let dollItems: Item[] = []; // items currently held by the doll
-  const maxDollItems = 4;
-
+  // Hover state
   let hoveredItem: Item | null = null;
   let hoverTasks: Task[] = [];
+
+  // On mount, start the night with random items/tasks
+  import { onMount } from "svelte";
+  onMount(() => {
+    startNight(); // defaults: 8 items, 10 tasks
+  });
+
+  // Assign/remove doll items
+  const maxDollItems = 4;
+  function toggleDollItem(item: Item) {
+    nightState.update(ns => {
+      const exists = ns.dollItems.find(i => i.id === item.id);
+      if (exists) {
+        return { ...ns, dollItems: ns.dollItems.filter(i => i.id !== item.id) };
+      } else if (ns.dollItems.length < maxDollItems) {
+        return { ...ns, dollItems: [...ns.dollItems, item] };
+      }
+      return ns;
+    });
+  }
 
   function handleHover(item: Item) {
     hoveredItem = item;
     hoverTasks = getTasksForItem(item.id);
   }
-
-  function toggleDollItem(item: Item) {
-    const exists = dollItems.find(i => i.id === item.id);
-    if (exists) {
-      dollItems = dollItems.filter(i => i.id !== item.id);
-    } else if (dollItems.length < maxDollItems) {
-      dollItems = [...dollItems, item];
-    }
-  }
 </script>
 
-<div class="p-6">
-  <h1 class="text-3xl font-bold mb-4">Witch’s Night Loop</h1>
+<div class="p-6 space-y-6">
+  <h1 class="text-3xl font-bold mb-4">Witch's Night Loop</h1>
 
-  {#if $currentStep.key === "giveDollItems"}
-    <!-- GIVE DOLL ITEMS STEP -->
-    <div class="flex gap-6">
-      <!-- LEFT: tasks affected by doll items -->
-      <div class="w-1/2 border-r border-gray-300 pr-4">
-        <h2 class="text-xl font-semibold mb-2">Tasks (highlighted by doll items)</h2>
-        <ul class="space-y-2">
-          {#each $tasks as t}
-            <li
-              class="p-2 rounded"
-              class:bg-purple-200={dollItems.some(i => getTasksForItem(i.id).some(task => task.id === t.id))}
-            >
-              {t.name}
-            </li>
-          {/each}
-        </ul>
-      </div>
-
-      <!-- RIGHT: select items for doll -->
+  <!-- GET TASKS + LIST ITEMS + GIVE DOLL ITEMS -->
+  {#if ["getTasks", "listItems", "giveDollItems"].includes($currentStep.key)}
+    <!-- ITEMS + HOVER PANEL -->
+    <div class="flex gap-6 mt-4">
+      <!-- Available items -->
       <div class="w-1/2 pl-4">
         <h2 class="text-xl font-semibold mb-2">Available Items</h2>
         <ul class="space-y-2">
-          {#each $items as item}
+          {#each $nightState.availableItems as item}
             <li
+              on:mouseover={() => handleHover(item)}
+              on:focus={() => handleHover(item)}
               on:click={() => toggleDollItem(item)}
+              tabindex="0"
               class="p-2 rounded cursor-pointer transition
                      hover:bg-purple-200 hover:text-purple-900
-                     {dollItems.some(i => i.id === item.id) ? 'bg-purple-300 font-bold' : ''}"
+                     {$nightState.dollItems.some(i => i.id === item.id) ? 'bg-purple-300 font-bold' : ''}"
             >
               {item.name}
             </li>
           {/each}
         </ul>
 
-        <p class="mt-4 text-gray-600">
-          Doll Items: {dollItems.map(i => i.name).join(", ") || "None"} (Max {maxDollItems})
-        </p>
+        {#if $currentStep.key === "giveDollItems"}
+          <p class="mt-4 text-gray-600">
+            Doll Items: {$nightState.dollItems.map(i => i.name).join(", ") || "None"} (Max {maxDollItems})
+          </p>
+        {/if}
       </div>
-    </div>
-  {:else if $currentStep.key === "listItems"}
-    <!-- LIST ITEMS STEP -->
-    <div class="flex gap-6">
-      <ul class="w-1/2 space-y-2">
-        {#each $items as item}
-          <li
-            on:mouseover={() => handleHover(item)}
-            on:focus={() => handleHover(item)}
-            tabindex="0"
-            class="p-2 rounded cursor-pointer transition
-                   hover:bg-purple-200 hover:text-purple-900"
-          >
-            {item.name}
-          </li>
-        {/each}
-      </ul>
 
-      <div class="w-1/2 border-l border-gray-300 pl-4">
-        {#if hoveredItem}
-          <h2 class="text-xl font-semibold mb-2">{hoveredItem.name}</h2>
+      <div class="w-1/2 border-r border-gray-300 pr-4">
+        <h2 class="text-xl font-semibold mb-2">Item Details / Tasks</h2>
+
+        {#if $currentStep.key === "giveDollItems"}
           <ul class="space-y-2">
+            {#each $nightState.nightlyTasks as t}
+              <li
+                class="p-2 rounded"
+                class:bg-purple-200={$nightState.dollItems.some(i => getTasksForItem(i.id).some(task => task.id === t.id))}
+              >
+                {t.name}
+              </li>
+            {/each}
+          </ul>
+        {:else if hoveredItem}
+          <h3 class="font-semibold">{hoveredItem.name}</h3>
+          <ul class="space-y-2 mt-2">
             {#each hoverTasks as t}
               <li class="p-2 bg-purple-100 rounded">{t.name}</li>
             {/each}
@@ -98,13 +93,13 @@
         {/if}
       </div>
     </div>
-  {:else}
-    <!-- STORY BEAT / NON-INTERACTIVE STEPS -->
+  {/if}
+
+  <!-- STORY BEAT STEPS -->
+  {#if !["getTasks", "listItems", "giveDollItems"].includes($currentStep.key)}
     <div class="p-4 bg-gray-100 rounded shadow">
       <h2 class="text-2xl font-semibold mb-2">{$currentStep.label}</h2>
-      <p class="text-gray-700">
-        Story beat or instructions for this step go here.
-      </p>
+      <p class="text-gray-700">Story beat or instructions for this step go here.</p>
     </div>
   {/if}
 
@@ -112,7 +107,11 @@
   <div class="mt-6">
     <button
       class="px-6 py-2 bg-purple-600 text-white font-bold rounded hover:bg-purple-700 transition"
-      on:click={nextStep}
+      on:click={() => {
+        // If we're moving to getTasks, start a new night
+        if ($currentStep.key === "dayEnd") startNight();
+        nextStep();
+      }}
     >
       {$currentStep.continueText}
     </button>
