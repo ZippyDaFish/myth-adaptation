@@ -1,4 +1,23 @@
-const tasks = [
+import { writable, derived } from "svelte/store";
+
+// types
+export interface Task {
+  id: number;
+  name: string;
+}
+
+export interface Item {
+  id: number;
+  name: string;
+}
+
+export interface ItemTaskLink {
+  itemId: number;
+  taskId: number;
+}
+
+// base data
+export const tasks = writable<Task[]>([
     { id: 1, name: "Sweep the dirt, dust, and ash from the living area." },
     { id: 2, name: "Brush away the soot that drifts down from the ever-smoldering stove." },
     { id: 3, name: "Sweep under the crooked furniture." },
@@ -19,9 +38,9 @@ const tasks = [
     { id: 18, name: "Check the hut's talons for splinters or stuck bones." },
     { id: 19, name: "Trim the hut's overgrown feathers." },
     { id: 20, name: "Brush away mud and moss from the hut's ankles." },
-]
+]);
 
-const items = [
+export const items = writable<Item[]>([
     { id: 101, name: "Birch-Twig Broom" },
     { id: 102, name: "Bone-Handled Tweezers" },
     { id: 103, name: "Lantern of Quiet Flames" },
@@ -42,9 +61,10 @@ const items = [
     { id: 118, name: "Vine-Snap Shears" },
     { id: 119, name: "Ash-Shovel of Lightness" },
     { id: 120, name: "Kernel-Culling Tray" },
-]
+]);
 
-export const itemTask = [
+// associative table
+export const itemTask = writable<ItemTaskLink[]>([
   // 1. Sweep the dirt, dust, and ash
   { itemId: 101, taskId: 1 }, // Birch-Twig Broom
   { itemId: 111, taskId: 1 }, // Ember-Bristle Hearthbrush
@@ -139,19 +159,43 @@ export const itemTask = [
   { itemId: 101, taskId: 20 }, // Birch-Twig Broom
   { itemId: 105, taskId: 20 }, // Cat-Tongue Brush
   { itemId: 104, taskId: 20 }, // Moss-Oil Salve
-];
+]);
 
+export function getItemsForTask(taskId: number): Item[] {
+    const links = get(itemTask);
+    const allItems = get(items);
 
+    return links
+        .filter(link => link.taskId === taskId)
+        .map(link => allItems.find(i => i.id === link.itemId)!)
+        .filter(Boolean);
+}
 
-function itemsForTask(taskId: number) {
-  return itemTask
-    .filter(link => link.taskId === taskId)
-    .map(link => items.find(i => i.id === link.itemId));
+export function getTasksForItem(itemId: number): Task[] {
+    const links = get(itemTask);
+    const allTasks = get(tasks);
+
+    return links
+        .filter(link => link.itemId === itemId)
+        .map(link => allTasks.find(t => t.id === link.taskId)!)
+        .filter(Boolean);
 }
 
 
-function tasksForItem(itemId: number) {
-  return itemTask
-    .filter(link => link.itemId === itemId)
-    .map(link => tasks.find(t => t.id === link.taskId));
-}
+
+import { get } from "svelte/store";
+
+// Selected task (UI-controlled)
+export const selectedTaskId = writable<number | null>(null);
+
+// Items that can do the selected task
+export const itemsForSelectedTask = derived(
+    [itemTask, items, selectedTaskId],
+    ([$itemTask, $items, $taskId]) => {
+        if ($taskId === null) return [];
+        return $itemTask
+            .filter(link => link.taskId === $taskId)
+            .map(link => $items.find(i => i.id === link.itemId)!)
+            .filter(Boolean);
+    }
+);
