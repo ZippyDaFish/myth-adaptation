@@ -39,7 +39,6 @@
 
   <!-- GET TASKS + LIST ITEMS + GIVE DOLL ITEMS -->
   {#if ["getTasks", "listItems", "giveDollItems"].includes($currentStep.key)}
-    <!-- ITEMS + HOVER PANEL -->
     <div class="flex gap-6 mt-4">
       <!-- Available items -->
       <div class="w-1/2 pl-4">
@@ -67,33 +66,31 @@
         {/if}
       </div>
 
+      <!-- Tasks panel -->
       <div class="w-1/2 border-r border-gray-300 pr-4">
         <h2 class="text-xl font-semibold mb-2">Item Details / Tasks</h2>
 
-        {#if $currentStep.key === "giveDollItems"}
-          <ul class="space-y-2">
-            {#each $nightState.nightlyTasks as t}
-              <li
-                class="p-2 rounded"
-                class:bg-purple-200={$nightState.dollItems.some(i => getTasksForItem(i.id).some(task => task.id === t.id))}
-              >
-                {t.name}
-              </li>
-            {/each}
-          </ul>
-        {:else if hoveredItem}
-          <h3 class="font-semibold">{hoveredItem.name}</h3>
-          <ul class="space-y-2 mt-2">
-            {#each hoverTasks as t}
-              <li class="p-2 bg-purple-100 rounded">{t.name}</li>
-            {/each}
-          </ul>
-        {:else}
-          <p class="text-gray-400">Hover an item to see its tasks</p>
+        <ul class="space-y-2">
+          {#each $nightState.nightlyTasks as t}
+            <li
+              class="p-2 rounded"
+              class:bg-purple-200={
+                $nightState.dollItems.some(i => getTasksForItem(i.id).some(task => task.id === t.id)) ||
+                (hoveredItem && getTasksForItem(hoveredItem.id).some(task => task.id === t.id))
+              }
+            >
+              {t.name}
+            </li>
+          {/each}
+        </ul>
+
+        {#if hoveredItem && $currentStep.key !== "giveDollItems"}
+          <h3 class="font-semibold mt-4">{hoveredItem.name}</h3>
         {/if}
       </div>
     </div>
   {/if}
+
 
   <!-- STORY BEAT STEPS -->
   {#if !["getTasks", "listItems", "giveDollItems"].includes($currentStep.key)}
