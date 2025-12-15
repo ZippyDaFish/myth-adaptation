@@ -3,6 +3,38 @@ import type { Item, Task } from "./tasks";
 import { items as allItemsStore, tasks as allTasksStore } from "./tasks";
 import { get } from "svelte/store";
 
+// Total accumulated points across nights
+export const totalPoints = writable(0);
+export const daysElapsed = writable(0);
+
+// Set the points required to win
+export const VICTORY_POINTS = 70; // adjust this for difficulty
+
+
+// Store for progress: 0–100
+export const overallProgress = writable(0);
+
+export function applyNightProgress() {
+  const results = get(taskResults);
+  if (!results) return;
+
+  // Score: success = 2, partial = 1, fail = 0
+  const points = results.reduce((sum, r) => {
+    if (r.outcome === "success") return sum + 2;
+    if (r.outcome === "partial") return sum + 1;
+    return sum;
+  }, 0);
+
+  // Add to total points
+  totalPoints.update(p => p + points);
+
+  // Update visual progress bar (0–100%)
+  const progressPercentage = (get(totalPoints) / VICTORY_POINTS) * 100;
+  overallProgress.set(Math.min(progressPercentage, 100));
+}
+
+
+
 // ----------------------
 // Game Step Types
 // ----------------------
@@ -14,7 +46,8 @@ export type GameStepKey =
   | "dollAttemptsChores"
   | "theDayContinues"
   | "playerMakesDinner"
-  | "dayEnd";
+  | "dayEnd"
+  | "win";
 
 export interface GameStep {
   key: GameStepKey;
@@ -38,21 +71,31 @@ export const gameSteps: GameStep[] = [
   { key: "dayEnd", label: "Day Ends", continueText: "Next Night", storyText: "" },
 ];
 
+export const winStep: GameStep = {
+  key: "win",
+  label: "Victory!",
+  continueText: "Restart",
+  storyText: "You have restored balance and completed all tasks. The hut hums with satisfaction, and spirits rejoice. Congratulations!",
+  interactive: false,
+};
+
+
 // ----------------------
 // Current Step Store
 // ----------------------
+export const allGameSteps = [...gameSteps, winStep];
 
 export const currentStepIndex = writable(0);
-
-export const currentStep = derived(currentStepIndex, $idx => gameSteps[$idx]);
+export const currentStep = derived(currentStepIndex, $idx => allGameSteps[$idx]);
 
 export function nextStep() {
-  currentStepIndex.update(idx => (idx + 1) % gameSteps.length);
+  currentStepIndex.update(idx => (idx + 1) % allGameSteps.length);
 }
 
 export function prevStep() {
-  currentStepIndex.update(idx => (idx - 1 + gameSteps.length) % gameSteps.length);
+  currentStepIndex.update(idx => (idx - 1 + allGameSteps.length) % allGameSteps.length);
 }
+
 
 // ----------------------
 // Night State Types
@@ -92,6 +135,8 @@ export function startNight(maxItems = 8, maxTasks = 10) {
     nightlyTasks: getRandomSubset(allTasks, maxTasks),
     dollItems: [],
   });
+
+  taskResults.set(null);
 }
 
 // ----------------------
@@ -133,4 +178,62 @@ import { itemTask } from "./tasks";
 export function getTaskIdsForItem(itemId: number): number[] {
   const links = get(itemTask);
   return links.filter(link => link.itemId === itemId).map(link => link.taskId);
+}
+
+export type TaskOutcome = "fail" | "partial" | "success";
+
+export interface TaskResult {
+  taskId: number;
+  roll: number;
+  bonus: number;
+  total: number;
+  difficulty: number;
+  outcome: TaskOutcome;
+  narrative?: string; // Witch-flavored text
+}
+
+
+export const taskResults = writable<TaskResult[] | null>(null);
+
+function roll3d6(): number {
+  return (
+    Math.floor(Math.random() * 6) + 1 +
+    Math.floor(Math.random() * 6) + 1 +
+    Math.floor(Math.random() * 6) + 1
+  );
+}
+
+export function resolveNightTasks() {
+  const { nightlyTasks, dollItems } = get(nightState);
+
+  const results: TaskResult[] = nightlyTasks.map(task => {
+    const difficulty = task.difficulty ?? 10;
+    const bonus = dollItems.filter(item =>
+      getTaskIdsForItem(item.id).includes(task.id)
+    ).length;
+
+    const roll =
+      Math.floor(Math.random() * 6) + 1 +
+      Math.floor(Math.random() * 6) + 1 +
+      Math.floor(Math.random() * 6) + 1;
+
+    const total = roll + bonus;
+
+    // Determine outcome
+    let outcome: TaskOutcome;
+    const margin = total - difficulty;
+    if (margin >= 3) outcome = "success";
+    else if (margin >= 0) outcome = "partial";
+    else outcome = "fail";
+
+    // Witch-flavored narrative
+    let narrative = "";
+    if (outcome === "success") narrative = "The task is done perfectly, spirits sing in approval.";
+    else if (outcome === "partial") narrative = "The task is half-done; a few mischievous remnants remain.";
+    else narrative = "The task fails; dust and soot taunt the hut.";
+
+    return { taskId: task.id, roll, bonus, total, difficulty, outcome, narrative };
+  });
+
+  taskResults.set(results);
 }

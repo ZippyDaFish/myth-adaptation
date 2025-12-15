@@ -1,8 +1,15 @@
 <script lang="ts">
-  import { currentStep, nextStep, nightState, startNight } from "$lib/stores/game";
+  import type { TaskResult } from "$lib/stores/game";
+
+  import { currentStep, nextStep, nightState, startNight, resolveNightTasks, taskResults, applyNightProgress, overallProgress, currentStepIndex, allGameSteps, totalPoints, VICTORY_POINTS, daysElapsed } from "$lib/stores/game";
   import { getTasksForItem } from "$lib/stores/tasks";
 
   import type { Item, Task } from "$lib/stores/tasks";
+
+  import { tick } from "svelte";
+
+  let rolling = false;
+
 
   // Hover state
   let hoveredItem: Item | null = null;
@@ -10,6 +17,7 @@
 
   // On mount, start the night with random items/tasks
   import { onMount } from "svelte";
+    import { get } from "svelte/store";
   onMount(() => {
     startNight(); // defaults: 8 items, 10 tasks
   });
@@ -130,17 +138,122 @@ function taskOddsClass(taskId: number): string {
     </div>
   {/if}
 
-  <!-- CONTINUE BUTTON -->
-  <div class="mt-6">
-    <button
-      class="px-6 py-2 bg-purple-600 text-white font-bold rounded hover:bg-purple-700 transition"
-      on:click={() => {
-        // If we're moving to getTasks, start a new night
-        if ($currentStep.key === "dayEnd") startNight();
-        nextStep();
-      }}
-    >
-      {$currentStep.continueText}
-    </button>
+{#if $currentStep.key === "dollAttemptsChores"}
+  <div class="p-6 bg-gray-100 rounded shadow space-y-4">
+    <h2 class="text-2xl font-semibold">The Doll Sets to Work…</h2>
+
+    {#if $taskResults}
+      <ul class="space-y-3">
+        {#each $taskResults as r}
+          <li
+            class="p-3 rounded transition-colors duration-300"
+            class:bg-green-200={r.outcome === "success"}
+            class:bg-yellow-200={r.outcome === "partial"}
+            class:bg-red-200={r.outcome === "fail"}
+          >
+            <div class="flex justify-between items-center">
+              <div class="font-semibold">
+                {$nightState.nightlyTasks.find(t => t.id === r.taskId)?.name}
+              </div>
+              <div class="text-sm opacity-80">
+                Roll: {r.roll} + {r.bonus} → {r.total} vs {r.difficulty}
+              </div>
+            </div>
+            <p class="text-sm mt-1 italic">{r.narrative}</p>
+          </li>
+        {/each}
+      </ul>
+    {/if}
   </div>
+{/if}
+
+{#if $currentStep.key === "dayEnd"}
+  <div class="p-6 bg-gray-100 rounded shadow space-y-4">
+    <h2 class="text-2xl font-semibold">Day Recap</h2>
+
+    {#if $taskResults}
+      <ul class="space-y-2">
+        {#each $taskResults as r}
+          <li class="flex justify-between p-2 rounded
+                     transition-colors duration-200
+                     {r.outcome === 'success' ? 'bg-green-200' : ''}
+                     {r.outcome === 'partial' ? 'bg-yellow-200' : ''}
+                     {r.outcome === 'fail' ? 'bg-red-200' : ''}">
+            <span>{$nightState.nightlyTasks.find(t => t.id === r.taskId)?.name}</span>
+            <span class="italic">{r.outcome}</span>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  </div>
+{/if}
+
+
+
+  <!-- CONTINUE BUTTON -->
+<div class="mt-6">
+  <button
+    class="px-6 py-2 bg-purple-600 text-white font-bold rounded hover:bg-purple-700 transition"
+    on:click={() => {
+      switch ($currentStep.key) {
+
+        // Step where the player assigns items to the doll
+        case "giveDollItems":
+          resolveNightTasks(); // Doll attempts chores
+          nextStep();
+          break;
+
+        // Doll is attempting chores (just viewing results)
+        case "dollAttemptsChores":
+          nextStep();
+          break;
+
+        // Day end step: update progress and decide next action
+        case "dayEnd":
+          applyNightProgress(); // update progress immediately
+          daysElapsed.update(d => d + 1); // increment day count
+
+          // force Svelte to notice the change
+          tick().then(() => {
+            if (get(totalPoints) >= VICTORY_POINTS) {
+              currentStepIndex.set(allGameSteps.length - 1); // winStep
+            } else {
+              startNight();
+              currentStepIndex.set(0); // nightStart
+            }
+          });
+          break;
+
+        // Win step: reset the game
+        case "win":
+          overallProgress.set(0); // Reset progress
+          startNight();
+          currentStepIndex.set(0); // Start at nightStart
+          break;
+
+        // All other steps (story beats)
+        default:
+          nextStep();
+          break;
+      }
+    }}
+  >
+    {$currentStep.continueText}
+  </button>
+</div>
+
+
+<!-- Main Content Above -->
+
+<!-- Always visible progress bar -->
+<div class="fixed bottom-0 left-0 right-0 p-4 bg-gray-200 shadow-inner">
+  <div class="w-full h-4 bg-gray-300 rounded overflow-hidden">
+    <div
+      class="h-4 bg-purple-600 rounded transition-all duration-500"
+      style="width: {$overallProgress}%"
+    ></div>
+  </div>
+  <p class="text-sm mt-1 text-center">Overall Progress: {$overallProgress.toFixed(1)}%</p>
+</div>
+
 </div>

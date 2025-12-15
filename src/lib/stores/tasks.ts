@@ -4,6 +4,7 @@ import { writable, derived } from "svelte/store";
 export interface Task {
   id: number;
   name: string;
+  difficulty?: number;
 }
 
 export interface Item {
