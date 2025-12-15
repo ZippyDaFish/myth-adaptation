@@ -1,14 +1,14 @@
 <script lang="ts">
   import type { TaskResult } from "$lib/stores/game";
 
-  import { currentStep, nextStep, nightState, startNight, resolveNightTasks, taskResults, applyNightProgress, overallProgress, currentStepIndex, allGameSteps, totalPoints, VICTORY_POINTS, daysElapsed } from "$lib/stores/game";
+  import { currentStep, nextStep, nightState, startNight, resolveNightTasks, taskResults, applyNightProgress, overallProgress, currentStepIndex, allGameSteps, totalPoints, VICTORY_POINTS, daysElapsed, introShown } from "$lib/stores/game";
   import { getTasksForItem } from "$lib/stores/tasks";
 
   import type { Item, Task } from "$lib/stores/tasks";
 
   import { tick } from "svelte";
-import { onMount } from "svelte";
-import { get } from "svelte/store";
+  import { onMount } from "svelte";
+  import { get } from "svelte/store";
 
 
   let rolling = false;
@@ -19,7 +19,13 @@ import { get } from "svelte/store";
 
   // On mount, start the night with random items/tasks
   onMount(() => {
-    startNight(); // defaults: 8 items, 10 tasks
+    if (!get(introShown)) {
+      introShown.set(true);
+      currentStepIndex.set(allGameSteps.findIndex(s => s.key === "intro"));
+    } else {
+      currentStepIndex.set(allGameSteps.findIndex(s => s.key === "nightStart"));
+    }
+    startNight(); // prepare the first night
   });
 
   // Assign/remove doll items
@@ -78,7 +84,7 @@ import { get } from "svelte/store";
 <div class="w-screen h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-900 via-purple-800 to-black text-white font-serif">
   <!-- Game Title (outside scrollable container) -->
   <h1 class="text-4xl md:text-5xl font-bold text-center tracking-wide mb-6 drop-shadow-lg">
-    Witch's Night Loop
+    The Witch's Chores
   </h1>
 
   <div class="max-w-4xl w-full p-8 bg-black/70 rounded-3xl shadow-xl border border-purple-700 flex flex-col space-y-8
@@ -120,8 +126,11 @@ import { get } from "svelte/store";
                 <div class="flex justify-between items-center">
                   <span>{t.name}</span>
                   {#if supportingItemCount(t.id) > 0 && $currentStep.key === "giveDollItems"}
-                    <span class="text-xs opacity-80 text-yellow-200">+{supportingItemCount(t.id)} on 3d6</span>
+                    <span class="text-xs text-black-300 font-semibold drop-shadow-md">
+                      +{supportingItemCount(t.id)} on 3d6
+                    </span>
                   {/if}
+
                 </div>
               </li>
             {/each}
@@ -207,13 +216,14 @@ import { get } from "svelte/store";
                   currentStepIndex.set(allGameSteps.length - 1);
                 } else {
                   startNight();
-                  currentStepIndex.set(0);
+                  currentStepIndex.set(1);
                 }
               });
               break;
             case "win":
               overallProgress.set(0);
               daysElapsed.set(0);
+              introShown.set(false);
               startNight();
               currentStepIndex.set(0);
               break;

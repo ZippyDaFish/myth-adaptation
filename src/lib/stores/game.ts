@@ -13,6 +13,7 @@ export const VICTORY_POINTS = 50; // adjust this for difficulty
 
 // Store for progress: 0–100
 export const overallProgress = writable(0);
+export const introShown = writable(false);
 
 export function applyNightProgress() {
   const results = get(taskResults);
@@ -40,6 +41,7 @@ export function applyNightProgress() {
 // ----------------------
 
 export type GameStepKey =
+  | "intro"
   | "nightStart"
   | "giveDollItems"
   | "dayStart"
@@ -65,17 +67,25 @@ export const gameSteps: GameStep[] = [
   { key: "nightStart", label: "Night Falls", continueText: "Continue", storyText: "Light gutters and dies as the Rider in Black emerges from the deepening shadows. His horse drinks the last glow from the sky, and where he passes, the world exhales. Doors are barred, secrets stir, and spirits creep closer. He rides slowly, patiently, knowing that all things must eventually rest. When he disappears into the earth, only darkness remains, thick and watchful. Night has fallen and you find rest." },
   { key: "giveDollItems", label: "Give Items to Doll", continueText: "Assign Items", interactive: true, storyText: "" },
   { key: "dayStart", label: "Day Begins", continueText: "Continue", storyText: "A hush falls over the land just before the sun remembers to rise. From the pale mist comes the Rider in White, his horse's hooves making no sound upon the frost. Dew gathers where he passes, and shadows retreat like guilty things. He does not look left or right, for his duty is only to begin. When he rides on, birds draw breath, tools feel lighter in the hand, and the world allows work to start anew. The day begins." },
-  { key: "dollAttemptsChores", label: "Doll Attempts Chores", continueText: "See Results", storyText: "" },
+  { key: "dollAttemptsChores", label: "Doll Attempts Chores", continueText: "Continue", storyText: "" },
   { key: "theDayContinues", label: "The Day Continues", continueText: "Continue", storyText: "The air grows warm, then hot. Heat presses down like a hand on the back. The Rider in Red thunders past in a blaze of color, his cloak aflame with the fire of the sun. Sweat beads on skin, iron grows warm, and nothing may hide from his gaze. Under his reign, effort is demanded and truth is laid bare. What is unfinished becomes obvious, what is weak begins to crack. The day is in full force and you awaken." },
-  { key: "playerMakesDinner", label: "Dinner Time", continueText: "Eat", storyText: "" },
+  { key: "playerMakesDinner", label: "Dinner Time", continueText: "Eat", storyText: "You move about the small kitchen, gathering herbs, roots, and fragrant spices, stirring pots and arranging ingredients with care. The witch watches silently, her dark eyes narrowing slightly. Each perfect stir makes the meal almost too good, and a faint frown tugs at the corners of her lips. You sense her disappointment. The aroma from the flawless meal fills the hut." },
   { key: "dayEnd", label: "Day Ends", continueText: "Next Night", storyText: "" },
 ];
+
+export const introStep: GameStep = {
+  key: "intro",
+  label: "The Witch’s Hut",
+  continueText: "Begin",
+  storyText: "When you reach Baba Yaga's hut, you are terrified but polite, asking for fire and agreeing to work when she demands impossible tasks. You must listen carefully to her instructions and never argue. Each night, you secretly give your wooden doll items that can help complete the tasks, trusting it to complete the hardest chores while you rest. You should rise calmly, and prepare Baba Yaga's dinner perfectly. By following the doll's guidance and keeping your mother's blessing secret, you endure the witch's trials and stay alive.",
+  interactive: false,
+};
 
 export const winStep: GameStep = {
   key: "win",
   label: "Victory!",
   continueText: "Restart",
-  storyText: "You have restored balance and completed all tasks. The hut hums with satisfaction, and spirits rejoice. Congratulations!",
+  storyText: "After completing all of Baba Yaga's impossible chores with the help of your magical doll, you tell the witch that you succeeded because of your mother's blessing. Enraged, Baba Yaga throws you out of her hut. As you run through the dark forest, she hurls a skull with burning eyes after you, but you cleverly use it as a torch to find your way home.",
   interactive: false,
 };
 
@@ -83,7 +93,7 @@ export const winStep: GameStep = {
 // ----------------------
 // Current Step Store
 // ----------------------
-export const allGameSteps = [...gameSteps, winStep];
+export const allGameSteps = [introStep, ...gameSteps, winStep];
 
 export const currentStepIndex = writable(0);
 export const currentStep = derived(currentStepIndex, $idx => allGameSteps[$idx]);
@@ -138,6 +148,7 @@ export function startNight(maxItems = 8, maxTasks = 10) {
 
   taskResults.set(null);
 }
+
 
 // ----------------------
 // Doll Item Management
