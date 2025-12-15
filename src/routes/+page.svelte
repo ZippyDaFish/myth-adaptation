@@ -65,6 +65,13 @@ import { get } from "svelte/store";
     return "bg-gray-800 text-gray-200";
   }
 
+  function taskOutcomeClass(outcome: "success" | "partial" | "fail"): string {
+    if (outcome === "success") return "bg-emerald-500 text-white font-semibold shadow-md rounded-lg";
+    if (outcome === "partial") return "bg-purple-600 text-white font-semibold shadow-md rounded-lg";
+    if (outcome === "fail") return "bg-red-700 text-white font-semibold shadow-md rounded-lg";
+    return "bg-gray-800 text-gray-200 rounded-lg";
+  }
+
 </script>
 
 <!-- Full-screen centered container -->
@@ -144,7 +151,7 @@ import { get } from "svelte/store";
         {#if $taskResults}
           <ul class="space-y-3">
             {#each $taskResults as r}
-              <li class={`p-3 rounded transition-all duration-300 ${taskOddsClass(r.taskId)}`}>
+              <li class={`p-3 rounded transition-all duration-300 ${taskOutcomeClass(r.outcome)}`}>
                 <div class="flex justify-between items-center">
                   <div class="font-semibold">
                     {$nightState.nightlyTasks.find(t => t.id === r.taskId)?.name}
@@ -169,7 +176,7 @@ import { get } from "svelte/store";
         {#if $taskResults}
           <ul class="space-y-2">
             {#each $taskResults as r}
-              <li class={`flex justify-between p-2 rounded transition-all duration-300 ${taskOddsClass(r.taskId)}`}>
+              <li class={`flex justify-between p-2 rounded transition-all duration-300 ${taskOutcomeClass(r.outcome)}`}>
                 <span>{$nightState.nightlyTasks.find(t => t.id === r.taskId)?.name}</span>
                 <span class="italic">{r.outcome}</span>
               </li>
