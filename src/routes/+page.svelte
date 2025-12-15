@@ -32,6 +32,33 @@
     hoveredItem = item;
     hoverTasks = getTasksForItem(item.id);
   }
+
+  function supportingItemCount(taskId: number): number {
+  // Count doll-held items that can help this task
+  const dollSupport = $nightState.dollItems.filter(item =>
+    getTasksForItem(item.id).some(t => t.id === taskId)
+  ).length;
+
+  // Hovered item contributes visually (but does not consume a slot)
+  const hoverSupport =
+    hoveredItem &&
+    getTasksForItem(hoveredItem.id).some(t => t.id === taskId)
+      ? 1
+      : 0;
+
+  return dollSupport + hoverSupport;
+}
+
+function taskOddsClass(taskId: number): string {
+  const count = supportingItemCount(taskId);
+
+  if (count >= 4) return "bg-emerald-500 text-white font-semibold";
+  if (count === 3) return "bg-green-400 text-green-900";
+  if (count === 2) return "bg-green-200";
+  if (count === 1) return "bg-yellow-200";
+  return "bg-gray-100 text-gray-700";
+}
+
 </script>
 
 <div class="p-6 space-y-6">
@@ -73,13 +100,16 @@
         <ul class="space-y-2">
           {#each $nightState.nightlyTasks as t}
             <li
-              class="p-2 rounded"
-              class:bg-purple-200={
-                $nightState.dollItems.some(i => getTasksForItem(i.id).some(task => task.id === t.id)) ||
-                (hoveredItem && getTasksForItem(hoveredItem.id).some(task => task.id === t.id))
-              }
-            >
-              {t.name}
+              class={`p-2 rounded transition-colors duration-200 ${taskOddsClass(t.id)}`}>
+              <div class="flex justify-between items-center">
+                <span>{t.name}</span>
+
+                {#if supportingItemCount(t.id) > 0 && $currentStep.key === "giveDollItems"}
+                  <span class="text-xs opacity-80">
+                    +{supportingItemCount(t.id)} on 3d6
+                  </span>
+                {/if}
+              </div>
             </li>
           {/each}
         </ul>
@@ -96,7 +126,7 @@
   {#if !["getTasks", "listItems", "giveDollItems"].includes($currentStep.key)}
     <div class="p-4 bg-gray-100 rounded shadow">
       <h2 class="text-2xl font-semibold mb-2">{$currentStep.label}</h2>
-      <p class="text-gray-700">Story beat or instructions for this step go here.</p>
+      <p class="text-gray-700">{$currentStep.storyText}</p>
     </div>
   {/if}
 
