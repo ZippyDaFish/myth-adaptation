@@ -8,7 +8,7 @@ export const totalPoints = writable(0);
 export const daysElapsed = writable(0);
 
 // Set the points required to win
-export const VICTORY_POINTS = 70; // adjust this for difficulty
+export const VICTORY_POINTS = 50; // adjust this for difficulty
 
 
 // Store for progress: 0–100
