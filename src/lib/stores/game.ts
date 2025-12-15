@@ -10,16 +10,17 @@ import { get } from "svelte/store";
 export type GameStepKey =
   | "nightStart"
   | "giveDollItems"
-  | "nightEnd"
+  | "dayStart"
   | "dollAttemptsChores"
+  | "theDayContinues"
   | "playerMakesDinner"
-  | "witchGivesBoons"
   | "dayEnd";
 
 export interface GameStep {
   key: GameStepKey;
   label: string;          // optional label/title
   continueText: string;   // text for the continue button
+  storyText: string;
   interactive?: boolean;  // true if player needs to interact
 }
 
@@ -28,13 +29,13 @@ export interface GameStep {
 // ----------------------
 
 export const gameSteps: GameStep[] = [
-  { key: "nightStart", label: "Night Falls", continueText: "Continue" },
-  { key: "giveDollItems", label: "Give Items to Doll", continueText: "Assign Items", interactive: true },
-  { key: "nightEnd", label: "Night Ends", continueText: "Continue" },
-  { key: "dollAttemptsChores", label: "Doll Attempts Chores", continueText: "See Results" },
-  { key: "playerMakesDinner", label: "Dinner Time", continueText: "Eat" },
-  { key: "witchGivesBoons", label: "Boons & Curses", continueText: "Receive" },
-  { key: "dayEnd", label: "Day Ends", continueText: "Next Night" },
+  { key: "nightStart", label: "Night Falls", continueText: "Continue", storyText: "Light gutters and dies as the Rider in Black emerges from the deepening shadows. His horse drinks the last glow from the sky, and where he passes, the world exhales. Doors are barred, secrets stir, and spirits creep closer. He rides slowly, patiently, knowing that all things must eventually rest. When he disappears into the earth, only darkness remains, thick and watchful. Night has fallen and you find rest." },
+  { key: "giveDollItems", label: "Give Items to Doll", continueText: "Assign Items", interactive: true, storyText: "" },
+  { key: "dayStart", label: "Day Begins", continueText: "Continue", storyText: "A hush falls over the land just before the sun remembers to rise. From the pale mist comes the Rider in White, his horse's hooves making no sound upon the frost. Dew gathers where he passes, and shadows retreat like guilty things. He does not look left or right, for his duty is only to begin. When he rides on, birds draw breath, tools feel lighter in the hand, and the world allows work to start anew. The day begins." },
+  { key: "dollAttemptsChores", label: "Doll Attempts Chores", continueText: "See Results", storyText: "" },
+  { key: "theDayContinues", label: "The Day Continues", continueText: "Continue", storyText: "The air grows warm, then hot. Heat presses down like a hand on the back. The Rider in Red thunders past in a blaze of color, his cloak aflame with the fire of the sun. Sweat beads on skin, iron grows warm, and nothing may hide from his gaze. Under his reign, effort is demanded and truth is laid bare. What is unfinished becomes obvious, what is weak begins to crack. The day is in full force and you awaken." },
+  { key: "playerMakesDinner", label: "Dinner Time", continueText: "Eat", storyText: "" },
+  { key: "dayEnd", label: "Day Ends", continueText: "Next Night", storyText: "" },
 ];
 
 // ----------------------
