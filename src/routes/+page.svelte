@@ -84,7 +84,7 @@
 <div class="w-screen h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-900 via-purple-800 to-black text-white font-serif">
   <!-- Game Title (outside scrollable container) -->
   <h1 class="text-4xl md:text-5xl font-bold text-center tracking-wide mb-6 drop-shadow-lg">
-    The Witch's Chores
+    The Blessed Doll
   </h1>
 
   <div class="max-w-4xl w-full p-8 bg-black/70 rounded-3xl shadow-xl border border-purple-700 flex flex-col space-y-8

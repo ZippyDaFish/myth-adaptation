@@ -75,7 +75,7 @@ export const gameSteps: GameStep[] = [
 
 export const introStep: GameStep = {
   key: "intro",
-  label: "The Witch’s Hut",
+  label: "The Witch's Hut",
   continueText: "Begin",
   storyText: "When you reach Baba Yaga's hut, you are terrified but polite, asking for fire and agreeing to work when she demands impossible tasks. You must listen carefully to her instructions and never argue. Each night, you secretly give your wooden doll items that can help complete the tasks, trusting it to complete the hardest chores while you rest. You should rise calmly, and prepare Baba Yaga's dinner perfectly. By following the doll's guidance and keeping your mother's blessing secret, you endure the witch's trials and stay alive.",
   interactive: false,
